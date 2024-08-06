@@ -4,23 +4,25 @@ use fake::faker::creditcard::en::*;
 use fake::faker::internet::en::*;
 use fake::{Dummy, Fake};
 use rand::prelude::*;
+use serde::Serialize;
 
 // Defines `PRODUCT_IDS` and `CURRENCY_CODES` as slices of string literals.
 include!(concat!(env!("OUT_DIR"), "/arrays.rs"));
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct Home {}
 
 #[derive(Debug, Dummy)]
 pub struct Product {
+    // NOTE: This is not a form value.
     #[dummy(faker = "ProductId")]
     pub id: String,
 }
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct ViewCart {}
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct AddToCart {
     #[dummy(faker = "ProductId")]
     pub product_id: String,
@@ -28,19 +30,19 @@ pub struct AddToCart {
     pub quantity: u32,
 }
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct EmptyCart {}
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct SetCurrency {
     #[dummy(faker = "CurrencyCode")]
     pub currency_code: String,
 }
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct Logout {}
 
-#[derive(Debug, Dummy)]
+#[derive(Debug, Dummy, Serialize)]
 pub struct PlaceOrder {
     #[dummy(faker = "FreeEmail()")]
     pub email: String,
@@ -55,12 +57,16 @@ pub struct PlaceOrder {
     #[dummy(faker = "CountryName()")]
     pub country: String,
     #[dummy(faker = "Ccn")]
+    #[serde(rename = "credit_card_number")]
     pub cc_number: String,
     #[dummy(faker = "Month")]
+    #[serde(rename = "credit_card_expiration_month")]
     pub cc_month: String,
     #[dummy(faker = "Year")]
+    #[serde(rename = "credit_card_expiration_year")]
     pub cc_year: String,
     #[dummy(faker = "100..=999")]
+    #[serde(rename = "credit_card_cvv")]
     pub cc_cvv: u16,
 }
 
