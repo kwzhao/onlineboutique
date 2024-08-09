@@ -10,6 +10,7 @@ fake = { version = "2.9.2", features = ["derive"] }
 rand = "0.8.5"
 reqwest = "0.12.5"
 serde = { version = "1.0.204", features = ["derive"] }
+tokio = { version = "1.39.2", features = ["full"] }
 
 [build-dependencies]
 anyhow = "1.0.86"
