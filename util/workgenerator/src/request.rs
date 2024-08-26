@@ -4,10 +4,35 @@ use fake::faker::creditcard::en::*;
 use fake::faker::internet::en::*;
 use fake::{Dummy, Fake};
 use rand::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 // Defines `PRODUCT_IDS` and `CURRENCY_CODES` as slices of string literals.
 include!(concat!(env!("OUT_DIR"), "/arrays.rs"));
+
+// TODO: Implement Distribution<Self> for Standard?
+#[derive(Debug, Deserialize)]
+pub struct RequestMix {
+    pub home: f64,
+    pub product: f64,
+    pub view_cart: f64,
+    pub add_to_cart: f64,
+    pub empty_cart: f64,
+    pub set_currency: f64,
+    pub logout: f64,
+    pub place_order: f64,
+}
+
+#[derive(Debug)]
+pub enum RequestKind {
+    Home(Home),
+    Product(Product),
+    ViewCart(ViewCart),
+    AddToCart(AddToCart),
+    EmptyCart(EmptyCart),
+    SetCurrency(SetCurrency),
+    Logout(Logout),
+    PlaceOrder(PlaceOrder),
+}
 
 #[derive(Debug, Dummy, Serialize)]
 pub struct Home {}
