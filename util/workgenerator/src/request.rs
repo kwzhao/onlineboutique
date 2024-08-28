@@ -2,28 +2,70 @@ use chrono::{Datelike, Utc};
 use fake::faker::address::en::*;
 use fake::faker::creditcard::en::*;
 use fake::faker::internet::en::*;
-use fake::{Dummy, Fake};
+use fake::{Dummy, Fake, Faker};
 use rand::prelude::*;
+use rand_distr::WeightedIndex;
 use serde::{Deserialize, Serialize};
 
 // Defines `PRODUCT_IDS` and `CURRENCY_CODES` as slices of string literals.
 include!(concat!(env!("OUT_DIR"), "/arrays.rs"));
 
-// TODO: Implement Distribution<Self> for Standard?
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Copy)]
 pub struct RequestMix {
-    pub home: f64,
-    pub product: f64,
-    pub view_cart: f64,
-    pub add_to_cart: f64,
-    pub empty_cart: f64,
-    pub set_currency: f64,
-    pub logout: f64,
-    pub place_order: f64,
+    pub home: u64,
+    pub product: u64,
+    pub view_cart: u64,
+    pub add_to_cart: u64,
+    pub empty_cart: u64,
+    pub set_currency: u64,
+    pub logout: u64,
+    pub place_order: u64,
+}
+
+impl Distribution<RequestData> for RequestMix {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> RequestData {
+        #[derive(Clone)]
+        enum RequestKind {
+            Home,
+            Product,
+            ViewCart,
+            AddToCart,
+            EmptyCart,
+            SetCurrency,
+            Logout,
+            PlaceOrder,
+        }
+        let choices = &[
+            (RequestKind::Home, self.home),
+            (RequestKind::Product, self.product),
+            (RequestKind::ViewCart, self.view_cart),
+            (RequestKind::AddToCart, self.add_to_cart),
+            (RequestKind::EmptyCart, self.empty_cart),
+            (RequestKind::SetCurrency, self.set_currency),
+            (RequestKind::Logout, self.logout),
+            (RequestKind::PlaceOrder, self.place_order),
+        ];
+        let (kinds, weights) = choices
+            .iter()
+            .cloned()
+            .unzip::<RequestKind, u64, Vec<_>, Vec<_>>();
+        let index_dist = WeightedIndex::new(weights).unwrap();
+        let kind = &kinds[index_dist.sample(rng)];
+        match kind {
+            RequestKind::Home => RequestData::Home(Faker.fake()),
+            RequestKind::Product => RequestData::Product(Faker.fake()),
+            RequestKind::ViewCart => RequestData::ViewCart(Faker.fake()),
+            RequestKind::AddToCart => RequestData::AddToCart(Faker.fake()),
+            RequestKind::EmptyCart => RequestData::EmptyCart(Faker.fake()),
+            RequestKind::SetCurrency => RequestData::SetCurrency(Faker.fake()),
+            RequestKind::Logout => RequestData::Logout(Faker.fake()),
+            RequestKind::PlaceOrder => RequestData::PlaceOrder(Faker.fake()),
+        }
+    }
 }
 
 #[derive(Debug)]
-pub enum RequestKind {
+pub enum RequestData {
     Home(Home),
     Product(Product),
     ViewCart(ViewCart),
