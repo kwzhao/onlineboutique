@@ -7,24 +7,26 @@ use rand::SeedableRng;
 use rand_distr::{Distribution, Exp};
 pub use request::*;
 use reqwest::{Client, Url};
+use serde::{Deserialize, Serialize};
 use tokio::time::{Duration, Instant};
 use tokio::{task, time};
 pub use units::*;
 
+#[builder]
 #[derive(Debug, Clone)]
 pub struct Config {
     pub url: Url,
     pub rps: u32,
     pub duration: Secs,
-    pub nr_connections: usize,
+    pub nr_conns: usize,
     pub mix: RequestMix,
 }
 
-pub async fn run(config: Config) -> Result<Vec<Duration>, Error> {
+pub async fn run(config: &Config) -> Result<Vec<Record>, Error> {
     let mut handles = Vec::new();
-    for _ in 0..config.nr_connections {
-        let rps = (config.rps as f64 / config.nr_connections as f64).round();
-        let lambda = (rps / 1e9).recip(); // requests_per_ns.recip()
+    for _ in 0..config.nr_conns {
+        let rps = (config.rps as f64 / config.nr_conns as f64).round();
+        let lambda = rps / 1e9; // requests per nanosecond
         let workload = ConnWorkload::builder()
             .url(config.url.clone())
             .deltas(Exp::new(lambda).map_err(|_| Error::InvalidWorkload)?)
@@ -33,11 +35,11 @@ pub async fn run(config: Config) -> Result<Vec<Duration>, Error> {
             .build();
         handles.push(task::spawn(run_one_connection(workload)));
     }
-    let mut latencies = Vec::new();
+    let mut records = Vec::new();
     for handle in handles {
-        latencies.extend(handle.await??);
+        records.extend(handle.await??);
     }
-    Ok(latencies)
+    Ok(records)
 }
 
 #[builder]
@@ -51,7 +53,7 @@ struct ConnWorkload {
 
 const HOST: &str = "onlineboutique.serviceweaver.dev";
 
-async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Duration>, Error> {
+async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Record>, Error> {
     let client = Client::new();
     let mut handles = Vec::new();
     let now = Instant::now();
@@ -66,31 +68,36 @@ async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Duration>, Err
         let send_fut = match workload.mix.sample(&mut rng) {
             RequestData::Home(form) => client.get(url).header("Host", HOST).form(&form).send(),
             RequestData::Product(not_a_form) => {
-                let url = format!("{url}/{}", not_a_form.id);
+                let url = format!("{url}{}", not_a_form.id);
                 client.get(url).header("Host", HOST).send()
             }
             RequestData::ViewCart(form) => {
-                let url = format!("{url}/cart");
+                let url = format!("{url}cart");
                 client.get(url).header("Host", HOST).form(&form).send()
             }
             RequestData::AddToCart(form) => {
-                let url = format!("{url}/cart");
+                let url = format!("{url}cart");
                 client.post(url).header("Host", HOST).form(&form).send()
             }
             RequestData::EmptyCart(form) => {
-                let url = format!("{url}/cart/empty");
-                client.post(url).header("Host", HOST).form(&form).send()
+                let url = format!("{url}cart/empty");
+                client
+                    .post(url)
+                    .header("Host", HOST)
+                    .header("Content-Length", "0") // required
+                    .form(&form)
+                    .send()
             }
             RequestData::SetCurrency(form) => {
-                let url = format!("{url}/setCurrency");
+                let url = format!("{url}setCurrency");
                 client.post(url).header("Host", HOST).form(&form).send()
             }
             RequestData::Logout(form) => {
-                let url = format!("{url}/logout");
+                let url = format!("{url}logout");
                 client.get(url).header("Host", HOST).form(&form).send()
             }
             RequestData::PlaceOrder(form) => {
-                let url = format!("{url}/cart/checkout");
+                let url = format!("{url}cart/checkout");
                 client.post(url).header("Host", HOST).form(&form).send()
             }
         };
@@ -106,12 +113,18 @@ async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Duration>, Err
         });
         handles.push(handle);
     }
-    let mut latencies = Vec::new();
+    let mut records = Vec::new();
     for handle in handles {
         let elapsed = handle.await??;
-        latencies.push(elapsed);
+        let latency = Microsecs::new(elapsed.as_micros());
+        records.push(Record { latency })
     }
-    Ok(latencies)
+    Ok(records)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Record {
+    pub latency: Microsecs,
 }
 
 #[derive(Debug, thiserror::Error)]

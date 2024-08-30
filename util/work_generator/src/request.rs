@@ -204,18 +204,23 @@ impl Dummy<Month> for String {
 }
 
 #[cfg(test)]
-#[cfg(ignore)]
+// #[cfg(_ignore)]
 mod tests {
     use fake::Faker;
+    use reqwest::Url;
 
     use super::*;
+
+    fn base_url() -> Url {
+        "http://localhost:62662".parse().unwrap()
+    }
 
     #[tokio::test]
     async fn home() -> anyhow::Result<()> {
         let client = reqwest::Client::new();
         let home: Home = Faker.fake();
         let status = client
-            .get("http://34.49.117.79/")
+            .get(base_url())
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&home)
             .send()
@@ -231,7 +236,7 @@ mod tests {
         let client = reqwest::Client::new();
         let product: Product = Faker.fake();
         let status = client
-            .get(format!("http://34.49.117.79/{}", product.id))
+            .get(format!("{}{}", base_url(), product.id))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .send()
             .await?
@@ -246,7 +251,7 @@ mod tests {
         let client = reqwest::Client::new();
         let view_cart: ViewCart = Faker.fake();
         let status = client
-            .get("http://34.49.117.79/cart")
+            .get(format!("{}cart", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&view_cart)
             .send()
@@ -262,7 +267,7 @@ mod tests {
         let client = reqwest::Client::new();
         let add_to_cart: AddToCart = Faker.fake();
         let status = client
-            .post("http://34.49.117.79/cart")
+            .post(format!("{}cart", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&add_to_cart)
             .send()
@@ -278,7 +283,7 @@ mod tests {
         let client = reqwest::Client::new();
         let empty_cart: EmptyCart = Faker.fake();
         let status = client
-            .post("http://34.49.117.79/cart/empty")
+            .post(format!("{}cart/empty", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .header("Content-Length", "0") // required
             .form(&empty_cart)
@@ -295,7 +300,7 @@ mod tests {
         let client = reqwest::Client::new();
         let set_currency: SetCurrency = Faker.fake();
         let status = client
-            .post("http://34.49.117.79/setCurrency")
+            .post(format!("{}setCurrency", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&set_currency)
             .send()
@@ -311,7 +316,7 @@ mod tests {
         let client = reqwest::Client::new();
         let logout: Logout = Faker.fake();
         let status = client
-            .get("http://34.49.117.79/logout")
+            .get(format!("{}logout", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&logout)
             .send()
@@ -327,7 +332,7 @@ mod tests {
         let client = reqwest::Client::new();
         let order: PlaceOrder = Faker.fake();
         let status = client
-            .post("http://34.49.117.79/cart/checkout")
+            .post(format!("{}cart/checkout", base_url()))
             .header("Host", "onlineboutique.serviceweaver.dev")
             .form(&order)
             .send()

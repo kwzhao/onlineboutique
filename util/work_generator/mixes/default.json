@@ -1,0 +1,10 @@
+{
+  "home": 20,
+  "product": 40,
+  "view_cart": 10,
+  "add_to_cart": 10,
+  "empty_cart": 5,
+  "set_currency": 2,
+  "logout": 2,
+  "place_order": 10
+}

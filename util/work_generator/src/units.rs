@@ -17,6 +17,7 @@ pub struct Bytes(u64);
 
 #[nutype(derive(
     Debug,
+    Display,
     Clone,
     Copy,
     PartialEq,
@@ -32,6 +33,7 @@ pub struct Secs(u64);
 
 #[nutype(derive(
     Debug,
+    Display,
     Clone,
     Copy,
     PartialEq,
@@ -43,4 +45,20 @@ pub struct Secs(u64);
     Serialize,
     Deserialize
 ))]
-pub struct Nanosecs(u64);
+pub struct Microsecs(u128);
+
+#[nutype(derive(
+    Debug,
+    Display,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    FromStr,
+    Serialize,
+    Deserialize
+))]
+pub struct Nanosecs(u128);
