@@ -2,9 +2,11 @@
 name = "work_generator"
 version = "0.1.0"
 edition = "2021"
+default-run = "work_generator"
 
 [dependencies]
 anyhow = "1.0.86"
+axum = "0.7.5"
 bon = "1.2.1"
 chrono = "0.4.38"
 clap = { version = "4.5.16", features = ["derive", "suggestions"] }
@@ -23,3 +25,7 @@ tokio = { version = "1.39.2", features = ["full"] }
 anyhow = "1.0.86"
 serde = "1.0.204"
 serde_json = "1.0.122"
+
+[[bin]]
+name = "nop_server"
+path = "src/bin/nop_server.rs"
