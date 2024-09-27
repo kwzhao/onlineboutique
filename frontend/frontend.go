@@ -82,6 +82,7 @@ type Server struct {
 	adService             weaver.Ref[adservice.AdService]
 
 	boutique weaver.Listener
+	internal weaver.Listener
 }
 
 func Serve(ctx context.Context, s *Server) error {
