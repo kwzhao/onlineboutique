@@ -8,8 +8,8 @@ use rand_distr::{Distribution, Exp};
 pub use request::*;
 use reqwest::{Client, Url};
 use serde::{Deserialize, Serialize};
+use tokio::task;
 use tokio::time::{Duration, Instant};
-use tokio::{task, time};
 pub use units::*;
 
 #[builder]
@@ -56,12 +56,15 @@ const HOST: &str = "onlineboutique.serviceweaver.dev";
 async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Record>, Error> {
     let client = Client::new();
     let mut handles = Vec::new();
-    let now = Instant::now();
-    let mut cur = now;
+    let mut now = Instant::now();
+    let end = now + workload.duration;
     let mut rng = StdRng::from_entropy();
-    while cur - now < workload.duration {
+    while now < end {
+        // Wait until the next RPC time.
         let delta = workload.deltas.sample(&mut rng).round() as u64;
-        cur += Duration::from_nanos(delta);
+        let timer = async_timer::new_timer(Duration::from_nanos(delta));
+        timer.await;
+
         // Gather request data.
         let url = workload.url.clone();
         let client = client.clone();
@@ -101,17 +104,16 @@ async fn run_one_connection(workload: ConnWorkload) -> Result<Vec<Record>, Error
                 client.post(url).header("Host", HOST).form(&form).send()
             }
         };
-        // Schedule the next request.
+
+        // Send the next request.
         let handle = task::spawn(async move {
-            let mut interval = time::interval(cur - now);
-            interval.tick().await; // ticks immediately
-            interval.tick().await; // ticks after `cur - now`
             let now = Instant::now();
             let _ = send_fut.await?.error_for_status()?;
             let elapsed = now.elapsed();
             Result::<_, Error>::Ok(elapsed)
         });
         handles.push(handle);
+        now = Instant::now();
     }
     let mut records = Vec::new();
     for handle in handles {
