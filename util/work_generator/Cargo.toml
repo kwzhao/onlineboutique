@@ -6,7 +6,7 @@ default-run = "work_generator"
 
 [dependencies]
 anyhow = "1.0.86"
-async-timer = { version = "1.0.0-beta.14", features = ["tokio1"] }
+async-timer = { version = "1.0.0-beta.15", features = ["tokio1"] }
 axum = "0.7.5"
 bon = "1.2.1"
 chrono = "0.4.38"
